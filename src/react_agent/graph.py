@@ -3,7 +3,6 @@
 Works with a chat model with tool calling support.
 """
 
-from datetime import datetime, timezone
 from typing import Dict, List, Literal, cast
 
 from langchain_core.messages import AIMessage
@@ -39,9 +38,7 @@ async def call_model(
     model = load_chat_model(configuration.model).bind_tools(TOOLS)
 
     # Format the system prompt. Customize this to change the agent's behavior.
-    system_message = configuration.system_prompt.format(
-        system_time=datetime.now(tz=timezone.utc).isoformat()
-    )
+    system_message = configuration.system_prompt
 
     # Get the model's response
     response = cast(
@@ -120,4 +117,4 @@ graph = builder.compile(
     interrupt_before=[],  # Add node names here to update state before they're called
     interrupt_after=[],  # Add node names here to update state after they're called
 )
-graph.name = "ReAct Agent"  # This customizes the name in LangSmith
+graph.name = "ReAct Agent Demo"  # This customizes the name in LangSmith
