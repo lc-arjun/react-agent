@@ -3,21 +3,21 @@
 Works with a chat model with tool calling support.
 """
 
-from typing import Dict, List, Literal, cast
+from typing import Annotated, Dict, List, Literal, cast
 
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph
 from langgraph.prebuilt import ToolNode
+from langgraph.types import Command, interrupt
+from pydantic import BaseModel, Field
 
 from react_agent.configuration import Configuration
 from react_agent.state import InputState, State
-from react_agent.tools import TOOLS
+from react_agent.tools import get_tools
 from react_agent.utils import load_chat_model
 
 # Define the function that calls the model
-
-
 async def call_model(
     state: State, config: RunnableConfig
 ) -> Dict[str, List[AIMessage]]:
@@ -33,9 +33,8 @@ async def call_model(
         dict: A dictionary containing the model's response message.
     """
     configuration = Configuration.from_runnable_config(config)
-
     # Initialize the model with tool binding. Change the model or add more tools here.
-    model = load_chat_model(configuration.model).bind_tools(TOOLS)
+    model = load_chat_model(configuration.model).bind_tools(get_tools(config))
 
     # Format the system prompt. Customize this to change the agent's behavior.
     system_message = configuration.system_prompt
@@ -63,17 +62,6 @@ async def call_model(
     return {"messages": [response]}
 
 
-# Define a new graph
-
-builder = StateGraph(State, input=InputState, config_schema=Configuration)
-
-# Define the two nodes we will cycle between
-builder.add_node(call_model)
-builder.add_node("tools", ToolNode(TOOLS))
-
-# Set the entrypoint as `call_model`
-# This means that this node is the first one called
-builder.add_edge("__start__", "call_model")
 
 
 def route_model_output(state: State) -> Literal["__end__", "tools"]:
@@ -99,22 +87,36 @@ def route_model_output(state: State) -> Literal["__end__", "tools"]:
     return "tools"
 
 
-# Add a conditional edge to determine the next step after `call_model`
-builder.add_conditional_edges(
-    "call_model",
-    # After call_model finishes running, the next node(s) are scheduled
-    # based on the output from route_model_output
-    route_model_output,
-)
+async def make_graph(config: RunnableConfig):
+    # Define a new graph
+    builder = StateGraph(State, input=InputState, config_schema=Configuration)
 
-# Add a normal edge from `tools` to `call_model`
-# This creates a cycle: after using tools, we always return to the model
-builder.add_edge("tools", "call_model")
 
-# Compile the builder into an executable graph
-# You can customize this by adding interrupt points for state updates
-graph = builder.compile(
-    interrupt_before=[],  # Add node names here to update state before they're called
-    interrupt_after=[],  # Add node names here to update state after they're called
-)
-graph.name = "ReAct Agent Demo"  # This customizes the name in LangSmith
+    # Define the two nodes we will cycle between
+    builder.add_node(call_model)
+    builder.add_node("tools", ToolNode(get_tools(config)))
+
+    # Set the entrypoint as `call_model`
+    # This means that this node is the first one called
+    builder.add_edge("__start__", "call_model")
+
+    # Add a conditional edge to determine the next step after `call_model`
+    builder.add_conditional_edges(
+        "call_model",
+        # After call_model finishes running, the next node(s) are scheduled
+        # based on the output from route_model_output
+        route_model_output,
+    )
+
+    # Add a normal edge from `tools` to `call_model`
+    # This creates a cycle: after using tools, we always return to the model
+    builder.add_edge("tools", "call_model")
+
+    # Compile the builder into an executable graph
+    # You can customize this by adding interrupt points for state updates
+    graph = builder.compile(
+        interrupt_before=[],  # Add node names here to update state before they're called
+        interrupt_after=[],  # Add node names here to update state after they're called
+    )
+    graph.name = "ReAct Agent Demo"  # This customizes the name in LangSmith
+    return graph

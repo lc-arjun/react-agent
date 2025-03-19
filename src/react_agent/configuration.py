@@ -3,36 +3,50 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, fields
-from typing import Annotated, Optional
+from enum import Enum
+from typing import Annotated, Literal, Optional
 
 from langchain_core.runnables import RunnableConfig, ensure_config
+from pydantic import BaseModel, Field
 
 
-@dataclass(kw_only=True)
-class Configuration:
+class Configuration(BaseModel):
     """The configuration for the agent."""
 
-    system_prompt: str = field(
+    system_prompt: str = Field(
         default="You are a helpful AI assistant.",
-        metadata={
-            "description": "The system prompt to use for the agent's interactions. "
-            "This prompt sets the context and behavior for the agent."
-        },
+        description="The system prompt to use for the agent's interactions. "
+        "This prompt sets the context and behavior for the agent.",
+        json_schema_extra={"langgraph_nodes": ["call_model"], "langgraph_type": "prompt"},
     )
 
-    model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default="anthropic/claude-3-5-sonnet-20240620",
-        metadata={
-            "description": "The name of the language model to use for the agent's main interactions. "
-            "Should be in the form: provider/model-name."
-        },
+    model: Annotated[
+            Literal[
+                "anthropic/claude-3-7-sonnet-latest",
+                "anthropic/claude-3-5-haiku-latest",
+                "openai/o1",
+                "openai/gpt-4o-mini",
+                "openai/o1-mini",
+                "openai/o3-mini",
+            ],
+            {"__template_metadata__": {"kind": "llm"}},
+        ] = Field(
+            default="openai/gpt-4o-mini",
+            description="The name of the language model to use for the agent's main interactions. "
+        "Should be in the form: provider/model-name.",
+        json_schema_extra={"langgraph_nodes": ["call_model"]},
     )
 
-    max_search_results: int = field(
+    selected_tools: list[Literal["search", "repeat"]] = Field(
+        default_factory=list,
+        description="The list of tools to use for the agent's interactions. "
+        "This list should contain the names of the tools to use.",
+        json_schema_extra={"langgraph_nodes": ["tools"]},
+    )
+
+    max_search_results: int = Field(
         default=10,
-        metadata={
-            "description": "The maximum number of search results to return for each search query."
-        },
+        description="The maximum number of search results to return for each search query."
     )
 
     @classmethod
@@ -40,7 +54,7 @@ class Configuration:
         cls, config: Optional[RunnableConfig] = None
     ) -> Configuration:
         """Create a Configuration instance from a RunnableConfig object."""
-        config = ensure_config(config)
-        configurable = config.get("configurable") or {}
-        _fields = {f.name for f in fields(cls) if f.init}
-        return cls(**{k: v for k, v in configurable.items() if k in _fields})
+        config_dict = ensure_config(config)
+        configurable = config_dict.get("configurable") or {}
+        # Use model_fields instead of fields() in Pydantic v2
+        return cls(**{k: v for k, v in configurable.items() if k in cls.model_fields})

@@ -6,9 +6,10 @@ These tools are intended as free examples to get started. For production use,
 consider implementing more robust and specialized tools tailored to your needs.
 """
 
-from typing import Any, Callable, List, Optional, cast
+from typing import Any, Callable, Optional, cast
 
 from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_community.tools.amadeus import AmadeusClosestAirport
 from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import InjectedToolArg
 from typing_extensions import Annotated
@@ -31,4 +32,22 @@ async def search(
     return cast(list[dict[str, Any]], result)
 
 
-TOOLS: List[Callable[..., Any]] = [search]
+async def repeat(
+    text: str,
+    *,
+    config: Annotated[RunnableConfig, InjectedToolArg]
+) -> str:
+    """Repeat the input text."""
+    return text + text
+
+
+def get_tools(config) -> list[Callable[..., Any]]:
+    # return [search]
+    configuration = Configuration.from_runnable_config(config)
+    tools = []
+    for tool in configuration.selected_tools:
+        if tool == "search":
+            tools.append(search)
+        elif tool == "repeat":
+            tools.append(repeat)
+    return tools
