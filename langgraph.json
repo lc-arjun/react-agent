@@ -1,7 +1,8 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "renamed_agent_again_again_again": "./src/react_agent/graph.py:make_graph"
+    "agent1": "./src/react_agent/graph.py:make_graph",
+    "agent2": "./src/react_agent/graph.py:make_graph"
   },
   "env": ".env"
 }
