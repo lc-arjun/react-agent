@@ -3,20 +3,8 @@
 Works with a chat model with tool calling support.
 """
 
-import json
-from typing import Dict, List, Literal, cast
-
-from langchain_core.messages import AIMessage
-from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
-from langgraph.prebuilt import ToolNode
-from langgraph.types import Command, interrupt
 from pydantic import BaseModel, Field
-
-from react_agent.configuration import Configuration
-from react_agent.state import InputState, State
-from react_agent.tools import TOOLS
-from react_agent.utils import load_chat_model
 
 # Define the function that calls the model
 
