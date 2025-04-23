@@ -2,7 +2,10 @@
   "dependencies": ["."],
   "graphs": {
     "agent1": "./src/react_agent/graph.py:make_graph",
-    "agent2": "./src/react_agent/graph.py:make_graph"
+    "agent2": "./src/react_agent/graph.py:make_graph",
+    "agent3": "./src/react_agent/graph2.py:graph",
+    "agent_with_quite_a_long_name": "./src/react_agent/graph.py:make_graph",
+    "interrupt_agent": "./src/react_agent/interrupt_graph.py:make_graph"
   },
   "env": ".env"
 }
