@@ -69,7 +69,7 @@ def another_func():
 async def call_model(
     state: State, config: RunnableConfig
 ) -> Dict[str, List[AIMessage]]:
-    answer = interrupt('how are you?')
+    # answer = interrupt('how are you?')
     """Call the LLM powering our "agent".
 
     This function prepares the prompt, initializes the model, and processes the response.
@@ -137,7 +137,11 @@ def route_model_output(state: State) -> Literal["__end__", "tools"]:
     if not last_message.tool_calls:
         return "__end__"
     # Otherwise we execute the requested actions
-    return "tools"
+    answer = interrupt('approve this tool call?')
+    if answer == 'yes':
+        return "tools"
+    else:
+        return "__end__"
 
 
 async def make_graph(config: RunnableConfig):
