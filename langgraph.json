@@ -1,7 +1,7 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "chat_agent": "./src/react_agent/graph.py:graph",
+    "chat_agent": "./src/react_agent/graph.py:make_graph",
     "non_chat_agent": "./src/react_agent/non-chat-graph.py:graph"
   },
   "env": ".env"
